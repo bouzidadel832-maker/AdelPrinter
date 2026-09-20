@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AdelPrinter — Diagnostic USB</title>
+<style>
+  :root{color-scheme:light dark}
+  body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#0b1220;color:#e5e7eb}
+  h1{font-size:18px;margin:0 0 4px}
+  .sub{font-size:12px;color:#93a3b8;margin-bottom:14px}
+  .etat{padding:10px 12px;border-radius:10px;font-weight:700;font-size:13px;margin-bottom:12px}
+  .ok{background:#052e1a;color:#5eead4;border:1px solid #134e35}
+  .ko{background:#3a1113;color:#fca5a5;border:1px solid #7f1d1d}
+  button{width:100%;padding:12px;margin:5px 0;border:0;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer}
+  .b1{background:#334155;color:#fff}
+  .b2{background:#1877f2;color:#fff}
+  .grp{border:1px solid #1e293b;border-radius:12px;padding:10px;margin:12px 0}
+  .grp h2{font-size:13px;margin:0 0 6px;color:#93a3b8}
+  pre{background:#000;color:#7CFC00;font-size:11px;padding:10px;border-radius:10px;max-height:40vh;overflow:auto;white-space:pre-wrap}
+  .row{display:flex;gap:6px}.row button{flex:1}
+</style>
+</head>
+<body>
+  <h1>🖨️ AdelPrinter — Diagnostic</h1>
+  <div class="sub">Test USB OTG direct tablette → imprimante. Aucun PC, aucun Bluetooth.</div>
+  <div id="etat" class="etat ko">Initialisation…</div>
+
+  <div class="grp">
+    <h2>1) Connexion</h2>
+    <button class="b1" onclick="detect()">🔍 Détecter l'imprimante</button>
+    <button class="b1" onclick="infos()">🔌 Infos USB (VID/PID/endpoints)</button>
+    <button class="b2" onclick="autoriser()">✅ Autoriser USB</button>
+  </div>
+
+  <div class="grp">
+    <h2>2) Trouver le bon protocole (imprime un échantillon)</h2>
+    <div class="row">
+      <button class="b1" onclick="proto('TSPL')">TSPL</button>
+      <button class="b1" onclick="proto('ESCPOS')">ESC/POS</button>
+      <button class="b1" onclick="proto('ZPL')">ZPL</button>
+    </div>
+    <div class="sub">Appuie sur chacun : celui qui imprime une étiquette lisible est le bon.</div>
+  </div>
+
+  <div class="grp">
+    <h2>3) Diagnostic</h2>
+    <button class="b1" onclick="document.getElementById('log').textContent=''">🧹 Effacer</button>
+    <pre id="log"></pre>
+  </div>
+
+<script>
+  function P(){ return window.AndroidPrinter; }
+  function dispo(){ return !!(P() && P().isAvailable && P().isAvailable()); }
+  function parse(r){ try{return JSON.parse(r);}catch(e){return {ok:false,message:String(r)};} }
+  function log(t){ var el=document.getElementById('log'); el.textContent=t+"\n"+el.textContent; }
+  function etat(ok,msg){ var el=document.getElementById('etat'); el.className='etat '+(ok?'ok':'ko'); el.textContent=msg; }
+  function pontLogs(){ try{ var l=parse(P().getLogs()).logs; if(l)log(l);}catch(e){} }
+
+  function detect(){ if(!dispo())return etat(false,"Pont Android absent."); var r=parse(P().detectPrinter()); etat(r.ok, r.ok?('✅ '+r.message):('⚠️ '+r.message)); log('DETECT -> '+JSON.stringify(r)); pontLogs(); }
+  function infos(){ if(!dispo())return etat(false,"Pont Android absent."); var r=parse(P().getUsbInfo()); log('USB -> '+(r.devices||JSON.stringify(r))); pontLogs(); }
+  function autoriser(){ if(!dispo())return etat(false,"Pont Android absent."); log('Demande permission USB…'); window.__cb=function(j){ var r=parse(j); etat(r.ok, r.ok?'✅ Permission accordée':'⚠️ '+r.message); log('PERM -> '+j); pontLogs(); }; P().requestPermission('__cb'); }
+  function proto(name){ if(!dispo())return etat(false,"Pont Android absent."); var r=parse(P().printProtocol(name)); etat(r.ok, r.ok?('✅ '+name+' envoyé'):('⚠️ '+r.message)); log('PROTO '+name+' -> '+JSON.stringify(r)); pontLogs(); }
+
+  if(dispo()) etat(true,"✅ Pont d'impression détecté. Branche l'imprimante en USB OTG.");
+  else etat(false,"⚠️ Ouvre cette page dans l'application AdelPrinter (le navigateur seul n'accède pas à l'USB).");
+</script>
+</body>
+</html>

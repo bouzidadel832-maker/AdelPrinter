@@ -1,48 +1,44 @@
-# Adel Printer — Pont USB Android pour Xprinter XP-410B
+# AdelPrinter — pont USB OTG pour le site Adel + imprimante Smart (Android)
 
-WebView plein écran qui charge Adel EN LIGNE (Netlify) et fournit à la web app
-un pont d'impression USB OTG via `window.AndroidPrinter`. Aucune copie locale du
-HTML : tes mises à jour Netlify sont visibles immédiatement.
+L'app ouvre TON site Adel en ligne (Netlify) dans une WebView et lui ajoute un
+pont d'impression USB OTG (window.AndroidPrinter) vers ton imprimante
+d'étiquettes **Smart** (protocole TSPL). Aucun PC, aucun Print Bridge, aucun
+Bluetooth. Le site n'est pas modifié ni remplacé.
 
-## Avant de compiler
-1. Ouvre `app/src/main/java/com/adel/printer/MainActivity.kt`
-   → remplace `https://TON-SITE.netlify.app/` par TON URL Netlify réelle.
+Architecture :
+  Tablette → APK AdelPrinter → WebView → https://lovely-begonia-d851a0.netlify.app/
+  → window.AndroidPrinter → USB OTG → imprimante Smart
 
-## Compiler l'APK (Android Studio)
-1. Android Studio → Open → sélectionne le dossier `AdelPrinter`.
-2. Laisse Gradle synchroniser (il télécharge le SDK/plugins).
-3. Build → Build Bundle(s)/APK(s) → **Build APK(s)**.
-4. L'APK est dans `app/build/outputs/apk/debug/app-debug.apk`.
+## Ce qui est inclus
+- WebView plein écran qui charge ton URL Netlify actuelle (dans MainActivity.kt).
+- Pont USB : détection auto de l'imprimante Smart (sans VID/PID en dur —
+  reconnaissance par classe USB imprimante et par nom produit), endpoint
+  BULK OUT dynamique, permission USB, logs de diagnostic.
+- Impression au format TSPL par défaut (étiquettes avec gap), avec repli
+  ESC/POS ou ZPL disponible via l'écran de diagnostic si besoin.
+- Les boutons d'impression de ton site (Détecter / Autoriser USB / Imprimer test…)
+  appellent le pont et impriment.
+- Bouton flottant "🖨️ Test" (coin bas-droit) : ouvre une page de diagnostic
+  EMBARQUÉE (hors-ligne) avec les 3 essais de protocole TSPL / ESC-POS / ZPL,
+  pour confirmer le protocole réel de l'imprimante sans toucher au site.
 
-## Installer sur la tablette D-TECH T101
-1. Copie l'APK sur la tablette (câble/clé USB) ou via `adb install app-debug.apk`.
-2. Autorise « Sources inconnues » si demandé.
-3. Branche la XP-410B en USB-C OTG.
-4. Ouvre « Adel Printer ». Android proposera d'ouvrir l'app quand l'imprimante
-   est branchée (grâce au filtre USB) — accepte.
+## Compiler l'APK (GitHub Actions, déjà configuré)
+1. Le workflow `.github/workflows/build-apk.yml` compile l'APK debug à chaque
+   push sur `main`/`master`, et est aussi déclenchable manuellement
+   (onglet **Actions** → "Build AdelPrinter APK" → **Run workflow**).
+2. Build fini (3–6 min) → Artifacts → télécharge `AdelPrinter-apk` (app-debug.apk).
 
-## Tester (écran TEST IMPRIMANTE dans Adel)
-Dans Adel → menu admin → **Test imprimante** :
-1. **Détecter l'imprimante** → doit afficher XP-410B (nom/VID/PID).
-2. **Afficher informations USB** → liste des périphériques + interfaces/endpoints.
-3. **Autoriser USB** → boîte de dialogue Android, accepte.
-4. **Imprimer test** → petite étiquette (latin + arabe bitmap) sur la XP-410B.
-5. **Imprimer étiquette exemple** → étiquette de commande complète.
+## Sur la tablette
+1. Installe app-debug.apk (autorise Sources inconnues).
+2. Branche l'imprimante Smart en USB OTG, ouvre AdelPrinter → ton site s'affiche.
+3. Pour confirmer le protocole : appuie le bouton flottant "🖨️ Test" → Détecter
+   → Autoriser USB → TSPL (déjà le format par défaut de l'imprimante Smart).
+4. Pour l'usage réel : utilise les boutons d'impression de ton site.
 
-Le panneau « Diagnostic » affiche les logs (devices, manufacturer, product,
-vendorId, productId, interface, endpoint, permission, octets envoyés).
+## Changer l'URL plus tard
+Dans MainActivity.kt : adelUrl = "https://…". Rien d'autre à toucher.
 
-## Notes techniques
-- **Aucun VID/PID en dur** : la détection inspecte classe imprimante / nom
-  produit, puis trouve dynamiquement l'endpoint BULK OUT.
-- **Arabe** : rendu en bitmap par Android (shaping RTL correct, lettres liées),
-  imprimé en TSPL `BITMAP`. Le latin/chiffres reste en TSPL `TEXT`.
-- **TSPL paramétrable** : SIZE (largeur/hauteur), GAP, DENSITY, SPEED, DIRECTION,
-  position X/Y — voir `LabelConfig` et `LabelBuilder`.
-- Extensions prêtes (commentées) : BARCODE 128, QRCODE, logos via BITMAP.
-
-## Ce qui n'est PAS testé ici
-La compilation et le test USB réel doivent être faits sur ta tablette : cet
-environnement n'a ni SDK Android ni imprimante. Le code est complet et
-l'algorithme TSPL/bitmap a été vérifié, mais NE considère l'impression comme
-fonctionnelle qu'après un vrai tirage sur la XP-410B.
+## Non testé ici
+Compilation vérifiée par GitHub Actions ; le test USB réel avec l'imprimante
+Smart se fait sur ta tablette. Le protocole TSPL est celui attendu pour cette
+imprimante, mais ne le considère confirmé qu'après un tirage réel.

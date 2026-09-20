@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Filtre volontairement générique : on ne suppose AUCUN VID/PID.
+     La classe 7 = imprimante. La détection fine se fait dans le code Kotlin
+     qui inspecte le nom produit / la classe de chaque périphérique. -->
+<resources>
+    <usb-device class="7" />
+    <!-- Beaucoup d'imprimantes thermiques s'exposent en classe 0 (par interface).
+         On ajoute donc aussi un filtre "tout périphérique" désactivé par défaut :
+         décommente si ta Smart n'est pas auto-détectée à l'attache. -->
+    <!-- <usb-device /> -->
+</resources>
