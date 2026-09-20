@@ -1,9 +1,13 @@
 name: Build AdelPrinter APK
 
 # Compile l'APK debug à chaque push, et manuellement via le bouton "Run workflow".
+# `claude/**` est inclus pour que le build tourne aussi sur les branches de
+# travail avant leur fusion dans main (workflow_dispatch exige que le fichier
+# soit déjà présent sur la branche par défaut, donc on ne peut pas s'y fier
+# tant que main n'a pas encore reçu ce workflow).
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, 'claude/**' ]
   workflow_dispatch:
 
 jobs:
