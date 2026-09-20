@@ -21,9 +21,28 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # 3) Installe le SDK Android + build-tools + platform (automatique)
+      # 3) Configure le SDK Android à partir de celui déjà préinstallé sur le
+      #    runner ubuntu-latest (on n'utilise plus android-actions/setup-android :
+      #    cette action échoue avec "Wrong version in preinstalled sdkmanager"
+      #    depuis la mise à jour de l'image du runner qui embarque un cmdline-tools
+      #    plus récent que celui que l'action attend). On accepte simplement les
+      #    licences et on installe la platform/les build-tools nécessaires avec
+      #    le sdkmanager déjà présent.
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          set -e
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME" -maxdepth 4 -type f -name sdkmanager 2>/dev/null | sort -V | tail -n1)"
+          fi
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager introuvable sur le runner" >&2
+            exit 1
+          fi
+          echo "Utilisation de: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       # 4) Rend le wrapper Gradle exécutable
       - name: Make gradlew executable
